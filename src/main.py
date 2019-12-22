@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify,request
 from pymongo import MongoClient
 
 app = Flask(__name__)
@@ -8,7 +8,7 @@ table = client.cph.cph
 driver = 'rolledm'
 car = 'rolledm_car'
 
-@app.route('/cph/api/v1.0/parts/', methods=['GET'])
+@app.route('/cph/api/v1.0/parts', methods=['GET'])
 def get_users():
     obj = table.find({})
     users = []
@@ -16,13 +16,36 @@ def get_users():
         users.append(f"{iter['name']} \'{iter['nickname']}\'")
     return jsonify(users)
 
-@app.route('/cph/api/v1.0/parts/<string:nickname>', methods=['GET'])
+@app.route('/cph/api/v1.0/parts/createUser', methods=['POST'])
+def create_user():
+    name = request.form.get('name')
+    nickname = request.form.get('nickname')
+    table.insert_one({'name': name, 'nickname': nickname, 'cars': []})
+    return get_users()
+
 def get_cars(nickname):
     obj = table.find_one({'nickname': nickname})['cars']
     cars = []
     for iter in obj:
         cars.append(f"{iter['name']} \'{iter['codename']}\'")
-    return jsonify(cars)
+    return cars
+
+@app.route('/cph/api/v1.0/parts/<string:nickname>', methods=['GET'])
+def get_available_cars(nickname):
+    return jsonify(get_cars(nickname))
+
+@app.route('/cph/api/v1.0/parts/<string:nickname>/createCar', methods=['POST'])
+def create_car(nickname):
+    #cars = get_cars(nickname)
+    person = table.find_one({'nickname': nickname})
+    name = request.form.get('name')
+    codename = request.form.get('codename')
+    mileage = request.form.get('mileage')
+    #cars = person['cars'].copy()
+    #print(cars)
+    person['cars'].append({'name': name, 'codename': codename, 'mileage': mileage, 'parts': []})
+    table.save(person)
+    return get_available_cars(nickname)
 
 @app.route('/cph/api/v1.0/parts/<string:nickname>/<string:car>', methods=['GET'])
 def get_parts(nickname, car):
