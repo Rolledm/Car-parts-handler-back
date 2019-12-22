@@ -36,14 +36,23 @@ def get_available_cars(nickname):
 
 @app.route('/cph/api/v1.0/parts/<string:nickname>/createCar', methods=['POST'])
 def create_car(nickname):
-    #cars = get_cars(nickname)
     person = table.find_one({'nickname': nickname})
     name = request.form.get('name')
     codename = request.form.get('codename')
     mileage = request.form.get('mileage')
-    #cars = person['cars'].copy()
-    #print(cars)
     person['cars'].append({'name': name, 'codename': codename, 'mileage': mileage, 'parts': []})
+    table.save(person)
+    return get_available_cars(nickname)
+
+@app.route('/cph/api/v1.0/parts/<string:nickname>/removeCar/<string:codename>', methods=['POST'])
+def remove_car(nickname, codename):
+    person = table.find_one({'nickname': nickname})
+    pointer = 0
+    for iter in person['cars']:
+        if iter['codename'] == codename:
+            pointer = iter
+            break
+    person['cars'].remove(pointer)
     table.save(person)
     return get_available_cars(nickname)
 
